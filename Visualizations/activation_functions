@@ -1,0 +1,60 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Tue Feb  2 2021
+
+@author: clemens
+"""
+
+#######################################################
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+plt.rcParams["figure.dpi"] = 300
+
+path = "Your_Path"
+#######################################################
+
+
+# general options for annoatation
+anno_opts = dict(xy=(0.875, 0.15), xycoords='axes fraction',
+                 va='bottom', ha='right')
+
+
+# generate 100 values from -8 to 8 
+x = np.linspace(-8,8,100)
+
+# grid layout 3 rows
+fig, (ax1, ax2, ax3) = plt.subplots(3, sharex=True)
+fig.suptitle('Different Acitvation Functions')
+
+# Sigmoid
+z = 1/(1 + np.exp(-x)) 
+ax1.plot(x,z)
+ax1.annotate('Sigmoid(x)', **anno_opts)
+ax1.axvline(0, 0, linewidth = 0.5, color = "black") 
+ax1.axhline(0, 0, linewidth = 0.5, color = "black")
+#f3_ax1.set_title("Sigmoid(X)")
+
+# tanh
+z = np.tanh(x)
+ax2.plot(x,z)
+ax2.annotate('Tanh(x)', **anno_opts)
+ax2.axvline(0, 0,linewidth = 0.5, color = "black")
+ax2.axhline(0, 0, linewidth = 0.5, color = "black")
+#f3_ax2.set_title("Tanh(X)") 
+
+# Relu
+#x = np.linspace(-1,1,100)
+ax3.plot(x,[max(0,  x) for x in x])
+ax3.annotate('ReLu(x)', **anno_opts)
+ax3.axvline(0, 0,linewidth = 0.5, color = "black")
+ax3.axhline(0, 0, linewidth = 0.5, color = "black")
+#f3_ax3.set_title("ReLu(x)")
+w
+
+# Save the image
+fig.savefig(path + 'activations.png')
+
+
+

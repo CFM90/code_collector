@@ -47,3 +47,4 @@ for count, ISIN in enumerate(ISIN_symbol_funds):
     except: 
         continue
   
+

@@ -18,7 +18,7 @@ from eventregistry import *
 
 ############################ https://newsapi.ai/ ############################ 
 # the API provides the full body of the article, by passing most ad blockers etc.
-YOUR_API_KEY = "14bdc87c-af21-4623-9576-7a01a6886156"
+YOUR_API_KEY = ""
 
 # allowUseOfArchive restricts the time used
 er = EventRegistry(apiKey = YOUR_API_KEY, allowUseOfArchive = False)

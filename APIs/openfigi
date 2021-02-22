@@ -1,0 +1,49 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Mon Feb 22 2021
+
+@author: clemens
+"""
+
+#######################################################
+import pandas as pd 
+
+import requests
+import time
+#https://www.openfigi.com/api
+# 5 requ. per minute without the API key
+
+#######################################################
+
+funds_list = ["DE0007100000", "DE0005190003"]
+
+def issin_to_symbol(issin):
+    # retrieving the symbol from the list of ISINS
+    url = 'https://api.openfigi.com/v2/mapping'
+    headers = {'Content-Type':'application/json'}
+    
+    payload = '[{"idType":"ID_ISIN","idValue":' + issin +'}]'
+    request = requests.post(url, headers=headers, data=payload)
+
+    temp_df = pd.DataFrame(request.json()[0]).iloc[0,:]
+    df = pd.json_normalize(temp_df)
+    df["ISIN"] = issin.replace('"', '')
+    return df
+
+
+ISIN_symbol_funds = ['"' + val + '"' for val in funds_list]
+
+
+################ acrually retrieve Symbols from ISINS ################ 
+df_symb = pd.DataFrame()
+
+for count, ISIN in enumerate(ISIN_symbol_funds):
+    # retrieving all symbols for given ISINS
+    try:
+        df_symb = df_symb.append(issin_to_symbol(ISIN), ignore_index=True)
+        time.sleep(15)
+        print("# " + str(count) + " " + str(ISIN) + " successfully loaded" )
+    except: 
+        continue
+  

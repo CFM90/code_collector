@@ -1,0 +1,49 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Fri Feb 19 2021
+
+@author: clemens
+"""
+#######################################################
+import pandas as pd 
+
+# ~ conda install git pip 
+# ~ pip install git+git://github.com/JECSand/yahoofinancials.git
+from yahoofinancials import YahooFinancials
+#######################################################
+
+funds = ['DAI.DE', 'HISFX']
+mutualfunds = YahooFinancials(funds)
+
+weekly_data = mutualfunds.get_historical_price_data('2018-01-01', '2021-02-15', 'weekly')
+
+df = pd.DataFrame([])
+
+for idx, val in enumerate(funds):
+    # convert all data to long format
+    temp_ =  pd.DataFrame(weekly_data[val]["prices"])
+    
+    try:     
+        temp_ ["symbol"] = val
+    except: 
+        pd.NA
+
+    try: 
+        temp_ ["currency"] = weekly_data[val]["currency"]
+    except: 
+        pd.NA
+
+    try:
+        temp_ ["type"] = weekly_data[val]["instrumentType"]
+    except:
+        pd.NA
+    df = df.append(temp_, ignore_index=True)
+    
+    
+
+
+
+
+
+

@@ -1,0 +1,135 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Sat Feb 6 2021
+
+@author: clemens
+"""
+
+#######################################################
+import pandas as pd 
+import numpy as np
+
+import requests
+import time
+
+# Alphavantage: 5 calls every min or 500 a day. You need to have the stocks symbol (!= ISIN)
+api_key = "YOUR_API_KEY"
+#######################################################
+
+
+
+################ Defining three functions for performance/currency/exchange rates ################
+
+def fund_performance(symbol):
+    # retrieving the raw stock market data for the symbol
+    link = "https://www.alphavantage.co/query?function=TIME_SERIES_WEEKLY_ADJUSTED&symbol=" + symbol +"&apikey=" + api_key
+    response = requests.get(link)
+    week_data = response.json()["Weekly Adjusted Time Series"]
+    df = pd.DataFrame(week_data).T
+    
+    # changing column namings 
+    df.columns = ["open","high","low","close","adj_close","volume","dividend_amount"]
+    # convert all columns of DataFrame to num
+    df = df.apply(pd.to_numeric) 
+    df.sort_index(inplace = True)
+    df['date'] = pd.to_datetime(df.index)
+    df["symbol"] = symbol
+    return df
+
+
+def fund_currency(symbol):
+    # retrieving the stocks currency
+    link_curr = "https://www.alphavantage.co/query?function=SYMBOL_SEARCH&keywords=" +  symbol + "&apikey=" + api_key
+    response = requests.get(link_curr)
+    df_curr = pd.DataFrame(response.json()["bestMatches"][0],  index=[1])
+    df_curr.columns = ["symbol","name","type","region","marketOpen", "marketClose", "timezone", "currency", "matchScore"]
+    df_curr = df_curr.loc[:, ["symbol","currency"]]
+    return df_curr
+
+
+def exchange_rates(currency):
+    # retrieving exch. rates from the API
+    link_exch = "https://www.alphavantage.co/query?function=FX_WEEKLY&from_symbol="+ currency + "&to_symbol=EUR&apikey=" + api_key
+    response = requests.get(link_exch)
+    df_exch = pd.DataFrame(response.json()["Time Series FX (Weekly)"]).T
+    df_exch.columns = ["open_curr","high_curr","low_curr","close_curr"]
+    df_exch = df_exch.apply(pd.to_numeric)
+    df_exch['date'] = pd.to_datetime(df_exch.index)
+    df_exch["currency"] = currency
+    return df_exch
+
+
+################ actually getting data ################
+symbols = ["DAI.DEX", "TSLA"]
+
+df = pd.DataFrame()
+df_curr = pd.DataFrame()
+
+
+for count, symbol in enumerate(symbols):
+    # loading perfomance metrics and curr. for all given stocks
+    try: 
+        df = df.append(fund_performance(symbol), ignore_index=True)
+        time.sleep(13)
+        
+        df_curr = df_curr.append(fund_currency(symbol), ignore_index=True)    
+        print("# " + str(count) + " " + str(symbol) + " loaded successfully" )
+        time.sleep(13)
+        
+    except: 
+        print("# " + str(count) + " " + str(symbol) + " not loaded properly" )
+        continue
+
+
+curr_from = ["USD","JPY", "GBP", "CAD", "CHF"]
+df_exch = pd.DataFrame()
+
+for count, currency in enumerate(curr_from):
+    # loading exch. rates for given stocks
+    try:
+        df_exch = df_exch.append(exchange_rates(currency), ignore_index=True)
+        print("# " + str(count) + " " + str(currency) + " loaded successfully" )
+        time.sleep(13)
+    except:
+        print("# " + str(count) + " " + str(currency) + " not loaded properly" )
+        continue
+    
+# first entry for USD is 2014-11-14
+df_exch.groupby("currency").agg({"close_curr": ["min", "max", "last", "mean", "var"], "date" : ["min"]})
+
+
+################ combining the data ################
+# date keys are insufficient, because curr. and perform. differ a day using week numbers instead
+df["weeknumb"] = df["date"].dt.year.astype(str)  + "-" + df["date"].dt.week.astype(str) 
+df_exch["weeknumb"] = df_exch["date"].dt.year.astype(str)  + "-" + df_exch["date"].dt.week.astype(str) 
+
+# 1: df with df_curr 
+df = df.merge(df_curr, how='left', on='symbol')
+
+# 2: df with df_exch
+df_exch = df_exch.loc[:, ["close_curr", "currency", "date"]]
+df = df.merge(df_exch, how='left', on=["date","currency"])
+
+# limiting the dates used
+df = df[(df['date']> "2015-01-01")]
+df["close_curr"].fillna(method='ffill', inplace=True)
+df.reset_index(drop=True, inplace=True)
+
+# clac. prices in EUR
+df["close_adj"] = np.where(df['currency'] != 'EUR', df["close"]*df["close_curr"], df["close"])
+
+# first value for second fund would be wrong, but we are only using later years
+df["perfor"] = df["close_adj"].pct_change(1)*100
+
+# get rid of the first row
+df = df[(df['date']> "2016-01-01")]
+
+# statistical measures for every fund 
+df.groupby("symbol").agg({"close_adj": ["min", "mean", "var"], "perfor" : ["mean", "var"]})
+
+
+
+
+
+

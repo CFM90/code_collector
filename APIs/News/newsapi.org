@@ -1,0 +1,34 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Tue Feb 23 2021
+
+@author: clemens
+"""
+
+#######################################################
+import pandas as pd
+from newsapi import NewsApiClient
+
+# installing packages with conda to avoid breaking the anaconda environment
+# ~ conda install git pip 
+# ~ pip install git+git://github.com/mattlisiv/newsapi-python
+#######################################################
+
+# limitations: The actual content is not fully included, just the preview
+# Shows content blocker overlays, which want you to disable your ad blockers as article content
+
+api_key = ""
+
+# Init
+newsapi = NewsApiClient(api_key= api_key)
+
+# /v2/everything
+all_articles = newsapi.get_everything(q='James Bond', 
+                                      language='de',
+                                      sort_by='relevancy',
+                                      page=1)
+
+df = pd.DataFrame(all_articles["articles"])
+
+
